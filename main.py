@@ -78,20 +78,22 @@ class Client:
     chosen_products: list = field(default_factory=list)
 
     def _choose_cashier(self, cashiers: List[Cashier]) -> Cashier:
-        to_be_free_cashiers = False
-        for cashier in cashiers:
-            if cashier.is_free:
-                to_be_free_cashiers = True
-                break
-        if to_be_free_cashiers:
-            cashier = None
-            while cashier is None:
-                num = random.randint(0, 2)
-                if cashiers[num].is_free:
-                    return cashiers[num]
-        else:
-            print('All cashiers are is busy right now')
-            return None
+    @staticmethod
+    def _choose_cashier(cashiers: List[Cashier]) -> Cashier:
+        free_cashier = None
+
+        while not free_cashier:
+
+            for cashier in cashiers:
+                if cashier.is_free:
+                    free_cashier = cashier
+
+            if not free_cashier:
+                print(f"Никто не нашелся, ждем 6 сек")
+                sleep(6)
+
+        print(f"{free_cashier} chosen")
+        return free_cashier
 
     def buy(self, products: List[Product], cashiers: List[Cashier]):
         cashier = self._choose_cashier(cashiers)
