@@ -44,8 +44,8 @@ class Cashier:
     async def do_work(self):
         wait_sec = random.randint(4, 10)
         await asyncio.sleep(wait_sec)
+        self.is_free = True
         print(f"now cashier{self.id} is free")
-        self.is_free = 1
 
     def _change_balance(self, money: float) -> None:
         self.balance += money
