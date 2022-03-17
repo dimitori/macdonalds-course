@@ -1,6 +1,7 @@
 import random
 from dataclasses import dataclass, field
 from typing import List
+from time import sleep as sleep
 
 
 @dataclass
@@ -34,6 +35,20 @@ class AssemblingProduct(Product):
         pass
 
 
+class Gen_id():
+    id = 0
+
+    def __init__(self):
+        Gen_id.id += 1
+
+
+@dataclass
+class Order:
+    id: int
+    status: str
+    essence: dict
+
+
 @dataclass
 class Cashier:
     id: int
@@ -52,8 +67,20 @@ class Cashier:
         self._change_balance(cost)
         self._get_balance()
 
-    def give_order(self):
-        pass
+    @staticmethod
+    def give_order(products: List[Product]) -> None:
+        chef = Chef(1, is_free=1)
+        Gen_id()
+        essence = {}
+        for p in products:
+            if p.name not in essence.keys():
+                essence[p.name] = 1
+            else:
+                essence[p.name] += 1
+
+        order = Order(id=Gen_id.id, status='new', essence=essence)
+        if chef.is_free:
+            chef.cook(order.essence)
 
 
 @dataclass
@@ -61,14 +88,8 @@ class Chef:
     id: int
     is_free: int
 
-    def cook(self):
-        pass
-
-
-@dataclass
-class Order:
-    id: int
-    status: int
+    def cook(self, essence: dict) -> None:
+        print(f'Chef starting cook {essence}')
 
 
 @dataclass
@@ -77,7 +98,6 @@ class Client:
     money: float
     chosen_products: list = field(default_factory=list)
 
-    def _choose_cashier(self, cashiers: List[Cashier]) -> Cashier:
     @staticmethod
     def _choose_cashier(cashiers: List[Cashier]) -> Cashier:
         free_cashier = None
@@ -108,6 +128,8 @@ class Client:
     def _pay(self, cost: float, cashier: Cashier) -> None:
         self.money -= cost
         cashier.get_order(cost, self.chosen_products)
+        # print(chef)
+        cashier.give_order(self.chosen_products)
 
     def _prepare_money(self) -> float:
         while self.chosen_products:
@@ -129,9 +151,7 @@ def main():
     product1 = CookableProduct('burger', price=3.00)
     product2 = CookableProduct('fries', 2.00)
     product3 = AssemblingProduct('Coffee', 1.00)
-
     products = [product1, product2, product3]
-
     client = Client(1, 10)
     cashier1 = Cashier(1, balance=random.randint(0, 10), is_free=random.randint(0, 1))
     cashier2 = Cashier(2, balance=random.randint(0, 10), is_free=random.randint(0, 1))
