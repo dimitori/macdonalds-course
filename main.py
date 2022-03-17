@@ -1,7 +1,9 @@
 import random
 from dataclasses import dataclass, field
+from typing import List
+import time
 
-jj
+
 @dataclass
 class Product:
     name: str
@@ -36,10 +38,20 @@ class AssemblingProduct(Product):
 @dataclass
 class Cashier:
     id: int
-    is_free: bool = True
+    balance: float
+    is_free: int
 
-    def get_order(self, cost: float, products: list[Product]):
+    def _change_balance(self, money: float) -> None:
+        self.balance += money
+
+    def _get_balance(self) -> float:
+        print(f'Balance cashier {self.id} now is {self.balance}')
+        return self.balance
+
+    def get_order(self, cost: float, products: List[Product]):
         print(f'Order accepted: {products}, cost={cost}')
+        self._change_balance(cost)
+        self._get_balance()
 
     def give_order(self):
         pass
@@ -56,9 +68,14 @@ class Chef:
 
 @dataclass
 class Order:
-    id: int
-    status: int
-
+    id = 0
+    cost: float
+    ordered_products: list = field(default_factory=list)
+    def __init__(self, cost: float, products: List[Product]) -> None:
+        self.cost = cost
+        self.ordered_products = products
+        self.__class__.id += 1
+        print(f'Order #{self.id} is processed: product {self.ordered_products} and cost={self.cost}')
 
 @dataclass
 class Client:
@@ -66,11 +83,35 @@ class Client:
     money: float
     chosen_products: list = field(default_factory=list)
 
-    def buy(self, products: list[Product], cashier: Cashier):
+    def form_order(self, products: List[Product]) -> Order:#создать заказ без помощи кассира
         self._choose_products(products)
-        cost = self._prepare_money()
+        order = Order(self._prepare_money(), self.chosen_products) # создание объекта класса заказ с выбранной стоимостью и набором продуктов
+        
 
-        print(f'Client{self.id} chose {self.chosen_products} with cost={cost}')
+
+    @staticmethod
+    def _choose_cashier(cashiers: List[Cashier]) -> Cashier:
+        free_cashier = None
+
+        while not free_cashier:
+
+            for cashier in cashiers:
+                if cashier.is_free:
+                    free_cashier = cashier
+
+            if not free_cashier:
+                print(f"Никто не нашелся, ждем 6 сек")
+
+
+        print(f"{free_cashier} chosen")
+        return free_cashier
+
+    def buy(self, products: List[Product], cashiers: List[Cashier]):
+        cashier = self._choose_cashier(cashiers)
+        if cashier is not None:
+            self._choose_products(products)
+            cost = self._prepare_money()
+            print(f'Client{self.id} chose {self.chosen_products} with cost={cost} to cashier {cashier.id}')
 
         if self.chosen_products:
             self._pay(cost, cashier)
@@ -87,7 +128,7 @@ class Client:
             self._reduce_products()
         return 0.0
 
-    def _choose_products(self, products: list[Product]) -> None:
+    def _choose_products(self, products: List[Product]) -> None:
         count = random.randint(1, 10)
         self.chosen_products = [random.choice(products) for _ in range(count)]  # генераторное выражение
 
@@ -101,11 +142,13 @@ def main():
     product3 = AssemblingProduct('Coffee', 1.00)
 
     products = [product1, product2, product3]
-
+    list_order = []
     client = Client(1, 10)
-    cashier = Cashier(1)
-
-    client.buy(products, cashier)
-
+    cashier1 = Cashier(1, balance=random.randint(0, 10), is_free=random.randint(0, 1))
+    cashier2 = Cashier(2, balance=random.randint(0, 10), is_free=random.randint(0, 1))
+    cashier3 = Cashier(3, balance=random.randint(0, 10), is_free=random.randint(0, 1))
+    cashiers = [cashier1, cashier2, cashier3]
+    client.buy(products, cashiers)
+    client.form_order(products)
 
 main()
