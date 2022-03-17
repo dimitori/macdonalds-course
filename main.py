@@ -1,6 +1,6 @@
 import random
 from dataclasses import dataclass, field
-from typing import List
+from time import sleep
 
 
 @dataclass
@@ -47,7 +47,7 @@ class Cashier:
         print(f'Balance cashier {self.id} now is {self.balance}')
         return self.balance
 
-    def get_order(self, cost: float, products: List[Product]):
+    def get_order(self, cost: float, products: list[Product]):
         print(f'Order accepted: {products}, cost={cost}')
         self._change_balance(cost)
         self._get_balance()
@@ -77,9 +77,8 @@ class Client:
     money: float
     chosen_products: list = field(default_factory=list)
 
-    def _choose_cashier(self, cashiers: List[Cashier]) -> Cashier:
     @staticmethod
-    def _choose_cashier(cashiers: List[Cashier]) -> Cashier:
+    def _choose_cashier(cashiers: list[Cashier]) -> Cashier:
         free_cashier = None
 
         while not free_cashier:
@@ -95,7 +94,7 @@ class Client:
         print(f"{free_cashier} chosen")
         return free_cashier
 
-    def buy(self, products: List[Product], cashiers: List[Cashier]):
+    def buy(self, products: list[Product], cashiers: list[Cashier]):
         cashier = self._choose_cashier(cashiers)
         if cashier is not None:
             self._choose_products(products)
@@ -117,7 +116,7 @@ class Client:
             self._reduce_products()
         return 0.0
 
-    def _choose_products(self, products: List[Product]) -> None:
+    def _choose_products(self, products: list[Product]) -> None:
         count = random.randint(1, 10)
         self.chosen_products = [random.choice(products) for _ in range(count)]  # генераторное выражение
 
