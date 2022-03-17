@@ -1,7 +1,7 @@
 import random
 from dataclasses import dataclass, field
 
-
+jj
 @dataclass
 class Product:
     name: str
