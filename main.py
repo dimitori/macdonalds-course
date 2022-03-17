@@ -1,6 +1,7 @@
+import asyncio
+
 import random
 from dataclasses import dataclass, field
-from time import sleep
 
 
 @dataclass
@@ -38,7 +39,13 @@ class AssemblingProduct(Product):
 class Cashier:
     id: int
     balance: float
-    is_free: int
+    is_free: bool = True
+
+    async def do_work(self):
+        wait_sec = random.randint(4, 10)
+        await asyncio.sleep(wait_sec)
+        print(f"now cashier{self.id} is free")
+        self.is_free = 1
 
     def _change_balance(self, money: float) -> None:
         self.balance += money
@@ -51,8 +58,12 @@ class Cashier:
         print(f'Order accepted: {products}, cost={cost}')
         self._change_balance(cost)
         self._get_balance()
+        self._register_order()
 
     def give_order(self):
+        pass
+
+    def _register_order(self) -> 'Order':
         pass
 
 
@@ -68,7 +79,6 @@ class Chef:
 @dataclass
 class Order:
     id: int
-    status: int
 
 
 @dataclass
@@ -78,7 +88,7 @@ class Client:
     chosen_products: list = field(default_factory=list)
 
     @staticmethod
-    def _choose_cashier(cashiers: list[Cashier]) -> Cashier:
+    async def _choose_cashier(cashiers: list[Cashier]) -> Cashier:
         free_cashier = None
 
         while not free_cashier:
@@ -88,18 +98,19 @@ class Client:
                     free_cashier = cashier
 
             if not free_cashier:
-                print(f"Никто не нашелся, ждем 6 сек")
-                sleep(6)
+                wait_sec = 2
+                print(f"Никто не нашелся, ждем {wait_sec} сек")
+                await asyncio.sleep(wait_sec)
 
         print(f"{free_cashier} chosen")
         return free_cashier
 
-    def buy(self, products: list[Product], cashiers: list[Cashier]):
-        cashier = self._choose_cashier(cashiers)
-        if cashier is not None:
-            self._choose_products(products)
-            cost = self._prepare_money()
-            print(f'Client{self.id} chose {self.chosen_products} with cost={cost} to cashier {cashier.id}')
+    async def buy(self, products: list[Product], cashiers: list[Cashier]):
+        self._choose_products(products)
+        cost = self._prepare_money()
+        print(f'Client{self.id} chose {self.chosen_products} with cost={cost}')
+
+        cashier = await self._choose_cashier(cashiers)
 
         if self.chosen_products:
             self._pay(cost, cashier)
@@ -124,7 +135,7 @@ class Client:
         self.chosen_products.pop()
 
 
-def main():
+async def main():
     product1 = CookableProduct('burger', price=3.00)
     product2 = CookableProduct('fries', 2.00)
     product3 = AssemblingProduct('Coffee', 1.00)
@@ -132,11 +143,14 @@ def main():
     products = [product1, product2, product3]
 
     client = Client(1, 10)
-    cashier1 = Cashier(1, balance=random.randint(0, 10), is_free=random.randint(0, 1))
-    cashier2 = Cashier(2, balance=random.randint(0, 10), is_free=random.randint(0, 1))
-    cashier3 = Cashier(3, balance=random.randint(0, 10), is_free=random.randint(0, 1))
+    cashier1 = Cashier(1, balance=random.randint(0, 10), is_free=False)
+    cashier2 = Cashier(2, balance=random.randint(0, 10), is_free=False)
+    cashier3 = Cashier(3, balance=random.randint(0, 10), is_free=False)
     cashiers = [cashier1, cashier2, cashier3]
-    client.buy(products, cashiers)
 
+    await asyncio.gather(
+        client.buy(products, cashiers),
+        *[c.do_work() for c in cashiers],
+    )
 
-main()
+asyncio.run(main())
