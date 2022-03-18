@@ -150,9 +150,9 @@ async def main():
     cashiers = [cashier1, cashier2, cashier3]
 
     await asyncio.gather(
+        counter(),
         client.buy(products, cashiers),
         *[c.do_work() for c in cashiers],
-        counter(),
     )
 
 
@@ -160,8 +160,8 @@ async def counter():
     count = 0
 
     for _ in range(30):
+        print(f"time: {count}")
         await asyncio.sleep(1)
         count += 1
-        print(f"time: {count}")
 
 asyncio.run(main())
