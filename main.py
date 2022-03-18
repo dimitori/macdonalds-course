@@ -1,7 +1,7 @@
 import random
 from dataclasses import dataclass, field
 from time import sleep
-import time
+from typing import ClassVar
 
 
 @dataclass
@@ -68,15 +68,17 @@ class Chef:
 
 @dataclass
 class Order:
-    id = 0
     cost: float
-    ordered_products: list = field(default_factory=list)
+    products: list[Product]
 
-    def __init__(self, cost: float, products: list[Product]) -> None:
-        self.cost = cost
-        self.ordered_products = products
-        self.__class__.id += 1
-        print(f'Order #{self.id} is processed: product {self.ordered_products} and cost={self.cost}')
+    id: int = field(init=False)
+
+    _id: ClassVar[int] = 0
+
+    def __post_init__(self):
+        Order._id += 1
+        self.id = Order._id
+        print(f'Order #{self.id} is processed: product {self.products} and cost={self.cost}')
 
 
 @dataclass
@@ -85,9 +87,9 @@ class Client:
     money: float
     chosen_products: list = field(default_factory=list)
 
-    def form_order(self, products: list[Product]) -> Order:#создать заказ без помощи кассира
+    def form_order(self, products: list[Product]) -> Order:  #создать заказ без помощи кассира
         self._choose_products(products)
-        order = Order(self._prepare_money(), self.chosen_products) # создание объекта класса заказ с выбранной стоимостью и набором продуктов
+        order = Order(self._prepare_money(), self.chosen_products)  # создание объекта класса заказ с выбранной стоимостью и набором продуктов
 
     @staticmethod
     def _choose_cashier(cashiers: list[Cashier]) -> Cashier:
