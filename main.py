@@ -144,7 +144,6 @@ def main():
     product3 = AssemblingProduct('Coffee', 1.00)
 
     products = [product1, product2, product3]
-    list_order = []
     client = Client(1, 10)
     cashier1 = Cashier(1, balance=random.randint(0, 10), is_free=random.randint(0, 1))
     cashier2 = Cashier(2, balance=random.randint(0, 10), is_free=random.randint(0, 1))
