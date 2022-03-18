@@ -42,7 +42,8 @@ class Cashier:
     is_free: bool = True
 
     async def do_work(self):
-        wait_sec = random.randint(4, 10)
+        wait_sec = random.randint(2, 20)
+        print(f"кассир {self.id} будет готов через {wait_sec} секунд")
         await asyncio.sleep(wait_sec)
         self.is_free = True
         print(f"now cashier{self.id} is free")
