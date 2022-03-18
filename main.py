@@ -89,7 +89,7 @@ class Client:
 
     def form_order(self, products: list[Product]) -> Order:  #создать заказ без помощи кассира
         self._choose_products(products)
-        order = Order(self._prepare_money(), self.chosen_products)  # создание объекта класса заказ с выбранной стоимостью и набором продуктов
+        return Order(self._prepare_money(), self.chosen_products)  # создание объекта класса заказ с выбранной стоимостью и набором продуктов
 
     @staticmethod
     def _choose_cashier(cashiers: list[Cashier]) -> Cashier:
