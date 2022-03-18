@@ -152,6 +152,16 @@ async def main():
     await asyncio.gather(
         client.buy(products, cashiers),
         *[c.do_work() for c in cashiers],
+        counter(),
     )
+
+
+async def counter():
+    count = 0
+
+    for _ in range(30):
+        await asyncio.sleep(1)
+        count += 1
+        print(f"time: {count}")
 
 asyncio.run(main())
