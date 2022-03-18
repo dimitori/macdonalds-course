@@ -1,6 +1,7 @@
 import random
 from dataclasses import dataclass, field
 from time import sleep
+from typing import ClassVar
 
 
 @dataclass
@@ -67,8 +68,17 @@ class Chef:
 
 @dataclass
 class Order:
-    id: int
-    status: int
+    cost: float
+    products: list[Product]
+
+    id: int = field(init=False)
+
+    _id: ClassVar[int] = 0
+
+    def __post_init__(self):
+        Order._id += 1
+        self.id = Order._id
+        print(f'Order #{self.id} is processed: product {self.products} and cost={self.cost}')
 
 
 @dataclass
@@ -76,6 +86,9 @@ class Client:
     id: int
     money: float
     chosen_products: list = field(default_factory=list)
+
+    def form_order(self, cost: float) -> Order:  #  создать заказ без помощи кассира
+        return Order(cost, self.chosen_products)  #  создание объекта класса заказ с выбранной стоимостью и набором продуктов
 
     @staticmethod
     def _choose_cashier(cashiers: list[Cashier]) -> Cashier:
@@ -94,7 +107,7 @@ class Client:
         print(f"{free_cashier} chosen")
         return free_cashier
 
-    def buy(self, products: list[Product], cashiers: list[Cashier]):
+    def buy(self, products: list[Product], cashiers: list[Cashier]) -> Order:
         cashier = self._choose_cashier(cashiers)
         if cashier is not None:
             self._choose_products(products)
@@ -103,6 +116,8 @@ class Client:
 
         if self.chosen_products:
             self._pay(cost, cashier)
+
+        return self.form_order(cost)
 
     def _pay(self, cost: float, cashier: Cashier) -> None:
         self.money -= cost
@@ -117,8 +132,11 @@ class Client:
         return 0.0
 
     def _choose_products(self, products: list[Product]) -> None:
-        count = random.randint(1, 10)
-        self.chosen_products = [random.choice(products) for _ in range(count)]  # генераторное выражение
+        if not self.chosen_products:
+            count = random.randint(1, 10)
+            self.chosen_products = [random.choice(products) for _ in range(count)]  # генераторное выражение
+        else:
+            print("choose nothing, have already")
 
     def _reduce_products(self) -> None:
         self.chosen_products.pop()
@@ -130,13 +148,13 @@ def main():
     product3 = AssemblingProduct('Coffee', 1.00)
 
     products = [product1, product2, product3]
-
     client = Client(1, 10)
     cashier1 = Cashier(1, balance=random.randint(0, 10), is_free=random.randint(0, 1))
     cashier2 = Cashier(2, balance=random.randint(0, 10), is_free=random.randint(0, 1))
     cashier3 = Cashier(3, balance=random.randint(0, 10), is_free=random.randint(0, 1))
     cashiers = [cashier1, cashier2, cashier3]
-    client.buy(products, cashiers)
 
+    order = client.buy(products, cashiers)
+    print(order)
 
 main()
