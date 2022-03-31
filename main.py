@@ -1,11 +1,8 @@
 import asyncio
 from queue import Queue
-
 import random
-import time
 from dataclasses import dataclass, field
 from typing import ClassVar
-from enum import Enum
 
 
 @dataclass
@@ -89,37 +86,35 @@ class Order:
         Order.queue_orders.put(self)
         print(f'Order #{self.id} is processed:product {self.products} and cost={self.cost}')
 
-    def print_queue_orders(self):
-        print(f'Order #{self.id} is processed:product {self.products} and cost={self.cost}')
-
-    def get_order(self):
+    @staticmethod
+    def get_order():
         return Order.queue_orders.get()
 
 
 @dataclass
 class Chef:
     id: int
+    cooking_time: float = 0
     is_free: bool = True
 
     async def cook(self, order: Order):
+        print(f'Chef {self.id} start cooking order #{order.id} time of prepare:{self.calculate_time(order)}')
         self.is_free = False
-        while not self.is_free:
-            print(f'i am cooking order# {order.id} time of prepare:{self.calc_time(order)}')
-            await asyncio.sleep(self.calc_time(order))
-            order.is_ready = True
-            self.is_free = True
-        else:
-            print('Order is cooked')
+        await asyncio.sleep(self.calculate_time(order))
+        order.is_ready = True
+        self.is_free = True
+        print(f'Chef cooked order #{order.id}')
 
-    async def calc_time(self, order: Order) -> int:
-        return sum([5 if i is CookableProduct else 1 for i in order.products])
+    @staticmethod
+    def calculate_time(order: Order) -> int:
+        return sum([2 if i is CookableProduct else 1 for i in order.products])
+
 
 @dataclass
 class Client:
     id: int
     money: float
     chosen_products: list = field(default_factory=list)
-    
 
     def form_order(self, cost: float) -> Order:
         return Order(cost, self.chosen_products)
@@ -142,7 +137,25 @@ class Client:
         print(f"{free_cashier} chosen")
         return free_cashier
 
-    async def buy(self, products: list[Product], cashiers: list[Cashier]):
+    @staticmethod
+    async def chose_chefs(chefs: list[Chef]):
+        free_chef = None
+
+        while not free_chef:
+
+            for chef in chefs:
+                if chef.is_free:
+                    free_chef = chef
+
+            if not free_chef:
+                wait_sec = 2
+                print(f"Шефы заняты, ждем {wait_sec} сек")
+                await asyncio.sleep(wait_sec)
+
+        print(f"{free_chef} chosen")
+        return free_chef
+
+    async def buy(self, products: list[Product], cashiers: list[Cashier], chefs: list[Chef]):
         self._choose_products(products)
         cost = self._prepare_money()
         print(f'Client{self.id} chose {self.chosen_products} with cost={cost}')
@@ -152,7 +165,9 @@ class Client:
         if self.chosen_products:
             self._pay(cost, cashier)
 
-        return self.form_order(cost)
+        order = self.form_order(cost)
+        chef = await self.chose_chefs(chefs)
+        await chef.cook(order.get_order())
 
     def _pay(self, cost: float, cashier: Cashier) -> None:
         self.money -= cost
@@ -177,7 +192,6 @@ class Client:
         self.chosen_products.pop()
 
 
-
 async def main():
     product1 = CookableProduct('burger', price=3.00)
     product2 = CookableProduct('fries', 2.00)
@@ -188,15 +202,27 @@ async def main():
     client = Client(1, 10)
     client1 = Client(2, 14)
     client2 = Client(3, 10)
+    clients = [client, client1, client2]
     chef = Chef(1)
+    chef2 = Chef(2)
+    chefs = [chef, chef2]
     cashier1 = Cashier(1, balance=random.randint(0, 10), is_free=random.randint(0, 1))
     cashier2 = Cashier(2, balance=random.randint(0, 10), is_free=random.randint(0, 1))
     cashier3 = Cashier(3, balance=random.randint(0, 10), is_free=random.randint(0, 1))
     cashiers = [cashier1, cashier2, cashier3]
 
+    async def counter():
+        count = 0
+        for _ in range(30):
+            print(f'time: {count}')
+            await asyncio.sleep(1)
+            count += 1
+
     await asyncio.gather(
-        client.buy(products, cashiers),
-        *[c.do_work() for c in cashiers]
+        counter(),
+        *[client.buy(products, cashiers, chefs) for client in clients],
+        *[c.do_work() for c in cashiers],
+
     )
 
 
