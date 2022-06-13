@@ -1,123 +1,10 @@
 import asyncio
-from queue import Queue
 import random
 from dataclasses import dataclass, field
-from typing import ClassVar
-
-
-@dataclass
-class Product:
-    name: str
-    price: float
-
-    def prepare(self):
-        pass
-
-    def __repr__(self):  # магический метод (дандер метод)
-        return f'{self.name}={self.price}'
-
-
-@dataclass(repr=False)
-class CookableProduct(Product):
-    def prepare(self):
-        self.cook()
-        self.put_on_desk()
-
-    def cook(self):
-        pass
-
-
-@dataclass(repr=False)
-class AssemblingProduct(Product):
-    def prepare(self):
-        self.assemble()
-
-    def assemble(self):
-        pass
-
-
-@dataclass
-class Order:
-    cost: float
-    products: list[Product] = field(default_factory=list)
-    is_ready: bool = False
-    id: int = field(init=False)
-
-    _id: ClassVar[int] = 0
-
-    queue_orders: ClassVar[Queue] = Queue()
-
-    def __post_init__(self):
-        Order._id += 1
-        self.id = Order._id
-        Order.queue_orders.put(self)
-        print(f'Order #{self.id} is processed:product {self.products} and cost={self.cost}')
-
-    @staticmethod
-    def get_order():
-        return Order.queue_orders.get()
-
-
-@dataclass
-class Cashier:
-    id: int
-    balance: float
-    orders_queue: list[Order]
-    is_free: bool = True
-
-    async def do_work(self):
-        wait_sec = random.randint(2, 20)
-        print(f"кассир {self.id} будет готов через {wait_sec} секунд")
-        await asyncio.sleep(wait_sec)
-        self.is_free = True
-        print(f"now cashier{self.id} is free")
-
-    def _change_balance(self, money: float) -> None:
-        self.balance += money
-
-    def _get_balance(self) -> float:
-        print(f'Balance cashier {self.id} now is {self.balance}')
-        return self.balance
-
-    def get_order(self, order: Order):
-        print(f'Order accepted: {order}')
-        self._change_balance(order.cost)
-        self._get_balance()
-        self._register_order(order)
-
-    def give_order(self):
-        pass
-
-    def _register_order(self, order) -> None:
-        self.orders_queue.append(order)
-
-
-@dataclass
-class Chef:
-    id: int
-    orders_queue: list[Order]
-    cooking_time: float = 0
-    is_free: bool = True
-
-    async def do_work(self):
-        while True:
-            await asyncio.sleep(3)
-            if self.orders_queue:
-                order = self.orders_queue.pop()
-                print(f"повар {self.id} забрал заказ {order}")
-                await self.cook(order)
-
-    async def cook(self, order: Order):
-        print(f'Chef {self.id} start cooking order #{order.id} time of prepare:{self.calculate_time(order)}')
-        self.is_free = False
-        await asyncio.sleep(self.calculate_time(order))
-        order.is_ready = True
-        self.is_free = True
-        print(f'Chef cooked order #{order.id}')
-
-    @staticmethod
-    def calculate_time(order: Order) -> int:
-        return sum([2 if i is CookableProduct else 1 for i in order.products])
+from cashiers import Cashier
+from chefs import Chef
+from orders import Order
+from products import Product
 
 
 @dataclass
@@ -130,7 +17,7 @@ class Client:
         return Order(cost, self.chosen_products)
 
     @staticmethod
-    async def _choose_cashier(cashiers: list[Cashier]) -> Cashier:
+    async def _choose_cashier(cashiers: list['Cashier']) -> 'Cashier':
         free_cashier = None
 
         while not free_cashier:
@@ -200,39 +87,22 @@ class Client:
 
 
 async def main():
-    product1 = CookableProduct('burger', price=3.00)
-    product2 = CookableProduct('fries', 2.00)
-    product3 = AssemblingProduct('Coffee', 1.00)
-
-    products = [product1, product2, product3]
-
-    orders_queue = []
-
-    client = Client(1, 10)
-    client1 = Client(2, 14)
-    client2 = Client(3, 10)
-    clients = [client, client1, client2]
-    chef = Chef(1, orders_queue)
-    chef2 = Chef(2, orders_queue)
-    chefs = [chef, chef2]
-    cashier1 = Cashier(1, balance=random.randint(0, 10), is_free=random.randint(0, 1), orders_queue=orders_queue)
-    cashier2 = Cashier(2, balance=random.randint(0, 10), is_free=random.randint(0, 1), orders_queue=orders_queue)
-    cashier3 = Cashier(3, balance=random.randint(0, 10), is_free=random.randint(0, 1), orders_queue=orders_queue)
-    cashiers = [cashier1, cashier2, cashier3]
+    from objects import chefs
+    from cashiers import cashiers
 
     async def counter():
         count = 0
-        for _ in range(30):
+        while True:
             print(f'time: {count}')
             await asyncio.sleep(1)
             count += 1
 
     await asyncio.gather(
         counter(),
-        *[client.buy(products, cashiers) for client in clients],
         *[c.do_work() for c in cashiers],
         *[c.do_work() for c in chefs],
     )
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
