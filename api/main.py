@@ -2,11 +2,16 @@ import asyncio
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
 from cashiers import cashiers, show_cashiers, choose_cashier, CashierNotFree, make_order
 from objects import chefs
 
 app = FastAPI()
+
+
+class Cashier(BaseModel):
+    id: int
 
 
 class CashierNotFreeNow(Exception):
@@ -42,9 +47,9 @@ async def choose_cashier_(id_: int):
 
 
 @app.post("/make_order")
-async def make_order_(id_: int):
-    make_order(id_)
-    return f"Кассир {id_} освободился"
+async def make_order_(cashier: Cashier):
+    make_order(cashier.id)
+    return f"Кассир {cashier.id} освободился"
 
 
 if __name__ == "__main__":
