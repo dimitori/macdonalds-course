@@ -1,9 +1,10 @@
 import asyncio
+import copy
 import random
 from dataclasses import dataclass
 from orders_queue import orders_queue
-
 from orders import Order
+from objects import products
 
 
 class CashierNotFree(Exception):
@@ -18,7 +19,7 @@ class Cashier:
     is_free: bool = True
 
     async def do_work(self):
-        wait_sec = random.randint(2, 20)
+        wait_sec = random.randint(10, 20)
         print(f"кассир {self.id} будет готов через {wait_sec} секунд")
         await asyncio.sleep(wait_sec)
         self.is_free = True
@@ -51,6 +52,8 @@ cashier3 = Cashier(3, balance=random.randint(0, 10), is_free=random.choice([True
 
 cashiers = [cashier1, cashier2, cashier3]
 
+def show_products():
+    return [f"продукт - {p.name}" for p in products]
 
 def show_cashiers():
     return [f"кассир{c.id} = {c.is_free}" for c in cashiers]
@@ -64,6 +67,12 @@ def choose_cashier(id_: int) -> Cashier:
     raise CashierNotFree()
 
 
-def make_order(id_: int):
+def make_order(id_: int, products: list, cost:float):
+    new_products = copy.deepcopy(products)
     cashier = cashiers[id_-1]
     cashier.is_free = True
+    order = Order(cost, new_products)
+    return order
+
+
+

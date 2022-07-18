@@ -12,6 +12,9 @@ class Product:
     def __repr__(self):  # магический метод (дандер метод)
         return f'{self.name}={self.price}'
 
+    def __str__(self):  # магический метод (дандер метод)
+        return f'{self.name}={self.price}'
+
 
 @dataclass(repr=False)
 class CookableProduct(Product):

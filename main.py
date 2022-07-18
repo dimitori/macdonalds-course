@@ -2,15 +2,16 @@ import asyncio
 import random
 from dataclasses import dataclass, field
 from cashiers import Cashier
-from chefs import Chef
-from orders import Order
-from products import Product
+from chefs import chef
+from orders import order
+from products import product
 
 
 @dataclass
 class Client:
     id: int
     money: float
+
     chosen_products: list = field(default_factory=list)
 
     def form_order(self, cost: float) -> Order:
@@ -106,3 +107,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
