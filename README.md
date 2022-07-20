@@ -9,3 +9,4 @@
 
 создайте виртуальное окружение для этого проекта (из pycharm)
 
+без pycharm - гуглить python install virtualenv
